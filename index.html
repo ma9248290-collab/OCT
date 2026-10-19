@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة التقييمات التفاعلية - الصف الأول الثانوي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #0ea5e9;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.7;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+            color: white;
+            padding: 2.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.2);
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 1rem 8rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-category-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.2rem 2rem;
+            border-radius: 14px;
+            font-size: 1.7rem;
+            font-weight: 900;
+            margin: 2.5rem 0 1.5rem;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* كارت السؤال (div) */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+            position: relative; /* مهم جداً عشان طبقة الرسم تثبت جوه الكارت */
+            overflow: hidden;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+            border-color: #94a3b8;
+        }
+
+        /* طبقة الرسم الخاصة بكل كارت لضمان عمل القلم 100% وثبات الكتابة */
+        .card-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        body.draw-mode-active .card-canvas {
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+
+        /* تقسيمة السؤال مع الصورة (السؤال يمين والصورة شمال) */
+        .question-header-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.8;
+            flex: 1; /* ياخد المساحة المتاحة ويفرد السؤال */
+        }
+
+        /* صندوق الصورة على اليسار */
+        .question-image-box {
+            width: 260px;
+            min-height: 160px;
+            flex-shrink: 0;
+            background: #f8fafc;
+            border: 2px dashed #94a3b8;
+            border-radius: 12px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .question-image-box img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            object-fit: contain;
+            display: none;
+        }
+
+        .question-image-box.has-src {
+            border: 1px solid var(--border);
+            background: #ffffff;
+            padding: 0.4rem;
+        }
+
+        .question-image-box.has-src img {
+            display: block;
+        }
+
+        .question-image-box.has-src .placeholder-info {
+            display: none;
+        }
+
+        .placeholder-info svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* الاختيارات: 2 جنب بعض وتحتهم 2 (شبكة 2×2) */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        @media (max-width: 700px) {
+            .question-header-row {
+                flex-direction: column;
+            }
+            .question-image-box {
+                width: 100%;
+            }
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .option-btn {
+            background: #f8fafc;
+            border: 2px solid var(--border);
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: right;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .option-btn.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        /* مربع الأسئلة المقالية */
+        .essay-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            resize: vertical;
+            transition: border-color 0.2s;
+            background: #f8fafc;
+            position: relative;
+            z-index: 2;
+        }
+
+        .essay-input:focus {
+            outline: none;
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* شريط أدوات القلم العائم */
+        .tools-panel {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            z-index: 9999;
+            border: 2px solid var(--border);
+            flex-wrap: wrap;
+            justify-content: center;
+            width: max-content;
+            max-width: 95vw;
+        }
+
+        .tool-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid white;
+            outline: 2px solid transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, outline-color 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            font-size: 1.2rem;
+        }
+        
+        .tool-btn.active {
+            outline-color: var(--text-main);
+            transform: scale(1.15);
+        }
+
+        .tool-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .btn-text {
+            background: var(--text-main);
+            color: white;
+            padding: 0.6rem 1.25rem;
+            border-radius: 25px;
+            border: none;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-text:hover {
+            background: #334155;
+            transform: translateY(-1px);
+        }
+
+        .toggle-draw {
+            background: var(--primary);
+        }
+
+        .toggle-draw.active {
+            background: #ef4444;
+        }
+
+        .divider {
+            width: 2px;
+            height: 28px;
+            background: #cbd5e1;
+            margin: 0 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>المراجعة الشاملة (شهر أكتوبر)</h1>
+        <p>الصف الأول الثانوي (بكالوريا وعام) - الفصل الدراسي الأول - مادة التاريخ</p>
+    </header>
+
+    <div class="container">
+        
+        <!-- القسم الأول: أسئلة الاختيار من متعدد -->
+        <div class="section-category-header">
+            <span>🗂️</span> أولاً: أسئلة الاختيار من متعدد
+        </div>
+        <div id="mcq-section-container"></div>
+
+        <!-- القسم الثاني: الأسئلة المقالية -->
+        <div class="section-category-header">
+            <span>📝</span> ثانياً: الأسئلة المقالية
+        </div>
+        <div id="essay-section-container"></div>
+
+    </div>
+
+    <!-- شريط الأدوات للرسم والشرح -->
+    <div class="tools-panel">
+        <button class="btn-text toggle-draw" id="toggleDrawBtn" onclick="toggleDrawing()">تفعيل قلم الشرح ✍️</button>
+        <div class="divider"></div>
+        
+        <!-- الألوان -->
+        <button class="tool-btn active" style="background: #ef4444;" onclick="setTool('pen', this, '#ef4444')" title="قلم أحمر"></button>
+        <button class="tool-btn" style="background: #2563eb;" onclick="setTool('pen', this, '#2563eb')" title="قلم أزرق"></button>
+        <button class="tool-btn" style="background: #10b981;" onclick="setTool('pen', this, '#10b981')" title="قلم أخضر"></button>
+        <button class="tool-btn" style="background: #0f172a;" onclick="setTool('pen', this, '#0f172a')" title="قلم أسود"></button>
+        
+        <!-- الأستيكة (الممحاة) -->
+        <button class="tool-btn" style="background: #f1f5f9; border-color: #cbd5e1;" onclick="setTool('eraser', this, null)" title="أستيكة لمسح جزء محدد">🧽</button>
+        
+        <div class="divider"></div>
+        
+        <!-- مسح الكل -->
+        <button class="btn-text" style="background: #64748b;" onclick="clearAllCanvases()">مسح السبورة بالكامل 🗑️</button>
+    </div>
+
+    <script>
+        // =========================================================================
+        // ملاحظة هامة لإضافة الصور:
+        // ابحث بالأسفل عن الأسئلة التي تحتوي على `hasImage: true`
+        // وضع مسار أو اسم الصورة داخل `imageSrc: 'اسم_الصورة.JPG'`
+        // =========================================================================
+
+        const mcqsData = [
+            { q: 'ثمرة أي مجهود يقوم به الإنسان نتيجة تفاعله مع البيئة يطلق عليه ...', options: ['استنساخ', 'حضارة', 'تاريخ', 'تقدم'] },
+            { q: 'تمايزت كل حضارة عن الحضارة الأخرى من حضارات العالم بـ ...', options: ['موقع جغرافي', 'اعتدال المناخ', 'سهولة الاتصال', 'الموروث العقائدي'] },
+            { q: 'استقرت الحضارة الإنسانية بعد أن تركت بلاد الشرق في ...', options: ['شرق آسيا', 'قارة أوروبا', 'سواحل الأميركتين', 'غرب إفريقيا'] },
+            { q: '" إذا ما آمن الإنسان الخوف ، تحررت فى نفسه دوافع التطلع ، وعوامل الإبداع والإنشاء " عندما تتحقق تلك المقولة لـ (ويل ديورانت) يستطيع الإنسان صنع ...', options: ['التاريخ', 'الحضارة', 'البيئة', 'الدوافع'] },
+            { q: 'أولي خطوات بناء معظم الحضارات القديمة في العالم كانت ...', options: ['بناء المعابد', 'اكتشاف المعادن', 'معرفة الكتابة', 'معرفة الزراعة'] },
+            { q: 'استقرت الحضارة الإنسانية لمدة ألف عام خلال العصور الوسطي ببلاد الشرق علي يد ...', options: ['الفراعنة', 'البابليين', 'المسلمين', 'الفرس'] },
+            { q: 'انتشرت الحضارة الغربية في انحاء العالم كنتيجة لـ ...', options: ['تفوقها الحضاري', 'موقعها المتميز', 'سهولة التواصل', 'السيطرة العسكرية'] },
+            { q: 'إقامة العديد من المشروعات الكبرى الأن بمصر والتي تتبنها الحكومة المصرية لم تكن لتتم وتظهر للعلن إلا إذا التزمنا بمفهوم الحضارة عند (ول ديورانت) يؤكد ذلك توافر ...', options: ['الاستقرار وتحقيق الأمن', 'التواصل مع العالم الخارجي', 'الاستفادة من خبرات السابقين', 'إبراز القدوة الحسنة للناس'] },
+            { q: 'إذا ما أمن الإنسان الخوف وتحررت في نفسه دوافع التطلع وعوامل الإبداع والإنشاء نتج عن ذلك ...', options: ['صراعه مع الأخريين', 'تفاعله مع بيئته', 'فقدانه لهويته', 'ابتعاده عن التعصب'] },
+            { q: 'تميزت الحضارات عن بعضها البعض في الهوية الثقافية والخصوصية العقائدية " من مصادر دراسة الحضارات التي عبرت عن ذلك ...', options: ['الأساطير', 'كتابات الشعراء', 'كتابات الفلاسفة', 'النقود والمسكوكات'] },
+            { q: 'إذا أردنا دراسة جوانب الحضارة الإغريقية القديمة سواء السياسية والاقتصادية يمكن الاعتماد علي ... .', options: ['كتابات مانيتون', 'قصة الطوفان', 'الإلياذة والأوديسة', 'بردية إيبرس'] },
+            { q: 'أي من الآتي يمثل موروث تاريخي عن حضارة العراق القديمة ؟ ... .', options: ['الإلياذة والأوديسة', 'إيزيس وأوزريس', 'قصة الطوفان', 'كتابات مانيون'] },
+            { q: 'يعتبر الفارق الجوهري بين المصادر الأولية والمراجع ... .', options: ['المادة المستخدمة', 'الفترة الزمنية', 'التفاعل مع البيئة', 'الأحداث التاريخية'] },
+            { q: 'تتفق أسطورة إيزيس وأوزوريس مع صلاية نعرمر أن كلاهما ... .', options: ['يوثقان لحضارة اليونان', 'من المصادر الأولية الدقيقة', 'تتسمان بالمبالغة والغموض', 'يقدمان معلومات عن الحضارة المصرية القديمة'] },
+            { q: 'عبرت بعض المصادر الثانوية عن التراث الروحي والأدبي عند بعض الحضارات الشرقية ومنها ... .', options: ['قصة الطوفان', 'كتاب الإلياذة والأوديسة', 'الاوستراكا', 'حجر بالرمو'] },
+            { q: 'عند دراسة الجوانب الاقتصادية للحضارة الإغريقية القديمة يمكن الاعتماد علي ... .', options: ['كتابات مانيتون', 'الأوستراكا', 'كتابات الشعراء', 'البرديات'] },
+            { q: 'أي من الأتي يخرج عن كونه أحد المصادر الثانوية ؟ ...', options: ['كتابات الفلاسفة', 'كتابات المؤرخين', 'كتابات الشعراء', 'الأساطير'] },
+            { q: 'تصنف المقالات العلمية كأحد أنواع المصادر الثانوية لكتابات التاريخ نتيجة ... .', options: ['افتقادها للدقة التاريخية', 'اعتمادها علي المصادر الأولية', 'الميل للمبالغة في الكتابة', 'تختص بموضوع واحد دون غيره'] },
+            { q: 'أي من الاتي تعد أحد نتائج توافر التربة الفيضية في مصر القديمة ؟ ........', options: ['المسكوكات', 'الاساطير', 'الشقفات', 'الاهرامات'] },
+            
+            // --- سؤال يحتوي على صورة (1) ---
+            { 
+                q: 'تمثل الصورة المقابلة إحدى البرديات المصرية من خلالها نستنتج ان البرديات أكثر دقة في معلوماتها كمصدر تاريخي من ........', 
+                hasImage: true,
+                imageSrc: '20.JPG', // <-- ضع مسار صورة البردية هنا مثل: 'bardia.JPG'
+                imageHint: 'صورة بردية مصرية قديمة',
+                options: ['حجر بالرمو', 'صلاية نعرمر', 'كتابات مانيتون', 'قصة ايزيس و أوزوريس'] 
+            },
+            
+            { q: 'يخرج عن الاهمية التاريخية لحجر بالرمو كمصدر لدراسة الحضارات معرفة .........', options: ['الاحداث الحربية في الدولة القديمة', 'اسماء ملوك الاسرة الثالثة المصرية', 'ملوك مصر في عصر ما قبل الاسرات', 'تقدم المصريين القدماء في علوم الطب'] },
+            { q: '" تعرف الحضارة بانها ثمرة اي مجهود يقوم به الانسان نتيجة تفاعله مع البيئة لتحسين ظروف حياته " اي من الاتي مثل وسيلة سهلة عند المصريين تستخدم في مختلف اشكال الحياة اليومية ؟ .........', options: ['الاوستراكا', 'المسكوكات', 'النقوش', 'الاثار'] },
+            
+            // --- سؤال يحتوي على صورة (2) ---
+            { 
+                q: 'يمكن لنا معرفة المزيد عن الاثر المقابل من خلال الرجوع الي ....', 
+                hasImage: true,
+                imageSrc: '23.JPG', // <-- ضع مسار صورة الأهرامات هنا مثل: 'pyramids.JPG'
+                imageHint: 'صورة أهرامات الجيزة',
+                options: ['صلاية نعرمر', 'قصة الطوفان', 'حجر بالرمو', 'بردية ايبرس'] 
+            },
+            
+            { q: 'استخدام المصري القديم للمقايضة جعلنا نفتقد في بعض الاوقات مصدرا تاريخيا هاما تمثل في .......', options: ['الاساطير', 'البرديات', 'كتابات الفلاسفة', 'النقود والمسكوكات'] },
+            { q: 'تفتقد النقود والمسكوكات قيمتها التاريخية عندما .........', options: ['تصنع بوزن خفيف', 'تكون من معادن رخيصة', 'تكون غير مختومة', 'يخف ويمحي رونقها'] },
+            { q: 'يعد وجه الشبة بين قطع الاوستراكا وصلاية نعرمر كمصدرين من مصادر     التاريخ أنهما ........', options: ['يتميزان بالدقة والموضوعية', 'يميلان للمبالغة في تناول الاحداث', 'مدون عليهما أعمال الملك احمس', 'مرجعا لدراسة للكاريكاتير'] },
+            { q: 'يمكن معرفة بعض الجوانب المناخية والجغرافية لمصر من خلال كتابات ........', options: ['مانيتون', 'هيرودوت', 'ارسطو', 'هوميروس'] },
+            { q: 'أي العصور التاريخية الآتية ينطبق عليه عصر المتناقضات ؟ ...', options: ['العصور القديمة', 'العصور الوسطي', 'العصور الحديثة', 'التاريخ المعاصر'] },
+            
+            // --- سؤال يحتوي على صورة (3) ---
+            { 
+                q: '" أمامك صورة تظهر العناية والمحافظة علي التراث البشري " أي من قيم دراسة التاريخ نستنتجها من الصورة ؟ ...', 
+                hasImage: true,
+                imageSrc: '29.JPG', // <-- ضع مسار صورة ترميم الآثار هنا مثل: 'restore.JPG'
+                imageHint: 'صورة شخص يرمم جدارية فرعونية',
+                options: ['استخلاص العبر', 'ابراز القدوة الصالحة', 'تنمية الشعور بالمسئولية', 'البعد عن التعصب'] 
+            },
+            
+            { q: 'أي من الأتي يخرج عن مميزات وملامح العصور الوسطي ...', options: ['قيام النظام الإقطاعي بأوروبا', 'ظهور الإسلام وانتشار فتوحاته', 'قيام حركة الكشوف الجغرافية', 'سيطرة الكنيسة الكاثوليكية علي أوروبا'] },
+            
+            // --- سؤال يحتوي على صورة (4) ---
+            { 
+                q: 'الشعار المقابل شعار المبادرة الرئاسية والذي شارك فيه أبناء المجتمع المصري لتنمية القري الفقيرة تدل تلك المشاركة علي الاستفادة من التاريخ في ...', 
+                hasImage: true,
+                imageSrc: '31.JPG', // <-- ضع مسار صورة حياة كريمة هنا مثل: 'hayakarima.JPG'
+                imageHint: 'شعار مبادرة حياة كريمة',
+                options: ['إبراز القدوات الحسنة', 'الابتعاد عن التعصب', 'تنمية الشعور بالمسئولية', 'استخلاص العبر'] 
+            },
+            
+            { q: 'قسم المؤرخون التاريخ إلي أربع عصور تاريخية " بتحليل سمات تلك العصور الأربعة نجد أن المؤرخين اعتمدوا عند بدأ كل عصر علي ...', options: ['المتغيرات الطبيعية', 'ظهور الديانات', 'الصراعات السياسية', 'التطورات الاقتصادية'] },
+            { q: 'يخرج عن أهمية دراسة علم التاريخ ...', options: ['تهذيب النفس البشرية وقبول الأخر', 'المضي قدمًا للأمام وحل المشكلات', 'إدراك قيمة حضارة الأخريين في التقدم', 'السعي لفرض الهيمنة والنفوذ بالعالم'] },
+            { q: 'تزامن اكتشاف الإنسان للزراعة مع ...', options: ['استخدام النار', 'قيام ثورة صناعية', 'سيادة الاقطاع', 'معرفة الكتابة'] },
+            { q: 'ظهر التفوق الحضاري لبلاد الشرق علي أوروبا خلال العصور ...', options: ['القديمة والمعاصرة', 'الوسطي والحديثة', 'الحديثة والمعاصرة', 'القديمة والوسطي'] },
+            { q: 'أي من الأتي يخرج عن ملامح العصور المعاصرة ؟ ...', options: ['تفشي الأمراض المدمرة', 'اندلاع الحروب العالمية', 'قيام الثورة الصناعية', 'الهبوط علي سطح القمر'] },
+            { q: 'لنهر النيل العديد من الآثار الهامة في حياة المصريين ظهر التأثير الاجتماعي لنهر النيل في حياة المصريين من خلال ...', options: ['تنشيط التجارة بين الشمال والجنوب', 'حماية مصر من خطر أعدائها', 'إبراز أهمية الوحدة التضامن', 'الحرص علي التكامل الاقتصادي'] },
+            { q: 'تشابهت الحضارة المصرية مع الحضارة العراقية قديمًا في عدة جوانب يخرج عنها ...', options: ['قيامها في أحواض الأنهار', 'كونهما من حضارات الشرق', 'الموقع الجغرافي المتوسط', 'استخدام البحر الاحمر كوسيلة اتصال'] },
+            { q: 'يخرج عن عوامل قيام الحضارات في العالم القديم أي مما يأتي ؟ ...', options: ['وجود الأنهار', 'كفاح الانسان', 'الموقع الجغرافي', 'القوة العسكرية'] },
+            { q: 'يرجع سر عظمة نهر النيل في مصر إلي أنه حمل الماء والطمي للزراعة كما أنه ساهم في ...', options: ['تماسك المصريين وتواصلهم بالعالم', 'حماية مصر من خطر أعدائها', 'المحافظة علي الأثار من عوامل الزمن', 'وفر أدوات صناعة المصريين لحضاراتهم'] },
+            { q: 'جاء التأثير والتأثر بين مصر وحضارات العالم القديم نتيجة ...', options: ['الموارد الطبيعية', 'اعتدال المناخ', 'الموقع المتميز', 'الحدود الطبيعية'] },
+            { q: 'أي من الآتي عزز الإلتقاء والتواصل بين شعوب وحضارات العالم القديم ؟ ...', options: ['قلة الموانع الطبيعية', 'وجودها علي سواحل واحدة', 'ترابطها بأنهار تتلاقي مياهها', 'اشتراكها بالظروف السياسية والاقتصادية'] },
+            { q: '" الحضارة المصرية – حضارة فينيقيا – حضارة اليونان – حضارة الرومان " العمل المشترك الذي يجمع هذه الحضارة يتمثل في ...', options: ['الإشراف علي مسطح مائي واحد', 'كونها من حضارات الشرق القديم', 'كونها جزء من حضارات الغرب القديم', 'سهولة التواصل الداخلي بين الأقاليم'] },
+            { q: 'يقول د: جمال حمدان في كتابه " شخصية مصر " مصر حجر الزاوية في الثلاثية القارية التي يتألف منها العالم القديم ... " نستنتج مما سبق أن العامل الأقوى من وجهة نظر د: جمال حمدان في تكوين شخصية مصر المتميزة هو ...', options: ['الحدود الطبيعية', 'وفرة الصخور والمعادن', 'تنوع المناخ', 'الموقع الجغرافي'] },
+            { q: 'أي من الآتي يخرج عن عوامل قيام الحضارات في بلاد الشرق قديما ؟ ...', options: ['المناخ الملائم', 'الموقع الجغرافي', 'الأراضي السهلية', 'رأس المال'] },
+            { q: 'تتضح السياسة الحكيمة لملوك العصر العتيق في مصر الفرعونية من الاهتمام بالنواحي .........', options: ['(أ) الاقتصادية والاجتماعية', '(ب) الإدارية والدينية', '(ج) الاقتصادية والدينية', '(د) الاجتماعية والدينية'] },
+            { q: '(وهن البلاد وسوء أحوالها يجعلها فريسة للأعداء). هذه العبارة تنطبق على الأسرات .........', options: ['(أ) الأولى والثانية', '(ب) من الثامنة عشر إلى العشرين', '(ج) من الثالثة عشر إلى السابعة عشر', '(د) من الثالثة إلى السادسة'] },
+            { q: 'تمكن من فرض سلطته على النظام الإداري في الدولة المصرية بعد فترة طويلة من الفوضى ...', options: ['(أ) سنوسرت الثالث', '(ب) تحتمس الثالث', '(ج) أمنمحات الأول', '(د) منتوحتب الثاني'] },
+            { q: 'هناك إرتباط بين زيادة نفوذ السلطة المحلية في مصر الفرعونية و ............', options: ['(أ) تدهور أحوال البلاد', '(ب) النهضة الاقتصادية', '(ج) زيادة قوة البلاد', '(د) تكوين الإمبراطورية'] },
+            { q: 'بدأ الإندماج الاجتماعي بين الشمال والجنوب في مصر القديمة خلال ............', options: ['(أ) العصر العتيق', '(ب) عصر الدولة القديمة', '(ج) عصر الدولة الوسطى', '(د) عصر الدولة الحديثة'] },
+            { q: 'كثرة بناء الأهرامات في عصر الدولة القديمة أقوى دليل على كل ما يلي ماعدا ............', options: ['(أ) براعة المصريين المعمارية', '(ب) وفرة الموارد الطبيعية', '(ج) تفوق المصريين في العلوم الهندسية', '(د) قوة وسطوة ملوك الدولة القديمة'] }
+        ];
+
+        const essaysData = [
+            'دلل علي صدق العبارة تاريخيًا : الشرق منارة الحضارة الإنسانية في العصور القديمة',
+            'من وجهة نظرك : أين ستستقر الحضارة الإنسانية مستقبلًا ؟ أدعم رأيك بالأدلة .',
+            'حدد العلاقة بين : أحواض الأنهار ونشأة الحضارة في بلاد الشرق .',
+            'ماذا كان يحدث إذا ؟ عجز الإنسان القديم عن التواصل مع جيرانه وانعزل عنهم',
+            'ما مقترحاتك لـ ؟ عودة الحضارة الإنسانية إلي الشرق مرة أخري ؟',
+            'دلل علي صدق العبارة تاريخيًا : انتقلت الحضارة الإنسانية بين الشرق وأوروبا خلال عصور التاريخ .',
+            'حدد العلاقة بين : الحضارة الإغريقية ومصادر الحضارات الأولية والثانوية.',
+            'المصادر الأولية – المصادر الثانوية . عند كتابتك للتاريخ علي أيهما تعتمد . ولماذا ؟',
+            '" إذا طلب منك كتابة بحث عن حضارة ما " وأردت معلومات موضوعية وأكثر دقة أيهما تفضل كمصدر لدراستك التاريخية ولماذا ؟',
+            'بم تفسر : تُعد المصادر الأولية أكثر دقة في الكتابات التاريخية .',
+            'كتابات الفلاسفة - الأساطير . لو قدر لك أن تكون أحد المؤرخين علي أي منهما تعتمد في كتاباتك ؟ ولماذا ؟',
+            'حدد وجه الشبه والاختلاف بين كتابات الفلاسفة وكتابات الشعراء كمصدر تاريخي .',
+            'دلل علي صحة العبارة تاريخيا :- تعد الاوستراكا مصدرا هاما لدراسة تاريخ الطبقة الوسطي والفقيرة بمصر القديمة .',
+            'حدد العلاقة بين : - مؤرخو الاغريق ودراسة التاريخ المصري القديم .',
+            'استنتج العلاقة بين :- بردية ايبرس و العلوم التطبيقية في مصر القديمة .',
+            'من خلال دراستك لمصادر دراسة الحضارات وضح الاسباب التي تجعلك تحافظ علي الاثار .',
+            'حدد العلاقة بين : دراسة التاريخ وتحقيق مبدأ التعايش السلمي وتقبل الأخر .',
+            'دلل علي صحة العبارة : تميزت بعض أحداث التاريخ المعاصر بالتخلص من تبعيات العصور الحديثة.',
+            'فسر أسباب : حرص الأمم علي دراسة علم التاريخ .',
+            'دلل علي صحة العبارة :اتسمت العصور الوسطي في معظم أحداثها بالصبغة الدينية',
+            'حدد العلاقة بين : أهمية دراسة التاريخ وتواصل الحضارات .',
+            'أيد صحة العبارة : أدي قيام الثورة الصناعية إلي الاستعمار الأوروبي في شمال إفريقيا',
+            'بم تفسر : نشأة حضارات العالم القديم ؟',
+            'أيد صحة العبارة : تُعد مصر حلقة وصل بين شعوب العالم القديم ؟',
+            '" لم يكن النيل مصدر اقتصادي للمصريين فقط بل أمتد أثره لاكتساب المصريين صفات اجتماعية عظيمة " . أثبت بالشواهد التاريخية صحة العبارة ؟',
+            'ما رأيك في : دور المصري القديم في استثمار ما هيأه الله له لقيام الحضارة ؟',
+            'حدد العلاقة بين : موقع مصر الجغرافي وقيام الحضارة المصرية ؟',
+            'استنتج الأثر الناتج عن : امتداد نهر النيل في الأراضي المصرية ؟'
+        ];
+
+        // --- بناء وعرض الأسئلة ---
+        const mcqContainer = document.getElementById('mcq-section-container');
+        const essayContainer = document.getElementById('essay-section-container');
+
+        mcqsData.forEach((mcq, index) => {
+            let imageBoxHtml = '';
+            // يظهر صندوق الصورة فقط للأسئلة التي تحتوي على hasImage: true
+            if (mcq.hasImage) {
+                const hasSrcClass = (mcq.imageSrc && mcq.imageSrc.trim() !== '') ? 'has-src' : '';
+                imageBoxHtml = `
+                    <div class="question-image-box ${hasSrcClass}">
+                        <div class="placeholder-info">
+                            <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                            <div>${mcq.imageHint}</div>
+                            <small style="color:#94a3b8; display:block; margin-top:4px;">(أضف مسار الصورة في imageSrc بالكود)</small>
+                        </div>
+                        <img src="${mcq.imageSrc}" alt="${mcq.imageHint}" />
+                    </div>
+                `;
+            }
+
+            let optionsHtml = '';
+            mcq.options.forEach((opt) => {
+                optionsHtml += `<button class="option-btn" onclick="selectOption(this)">${opt}</button>`;
+            });
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="question-header-row">
+                    <div class="question-text">${index + 1}- ${mcq.q}</div>
+                    ${imageBoxHtml}
+                </div>
+                <div class="options-grid">
+                    ${optionsHtml}
+                </div>
+                <canvas class="card-canvas"></canvas>
+            `;
+            mcqContainer.appendChild(card);
+        });
+
+        essaysData.forEach((essay, index) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="question-header-row">
+                    <div class="question-text">${index + 1}- ${essay}</div>
+                </div>
+                <textarea class="essay-input" placeholder=""></textarea>
+                <canvas class="card-canvas"></canvas>
+            `;
+            essayContainer.appendChild(card);
+        });
+
+        // --- التفاعل مع الاختيارات ---
+        function selectOption(element) {
+            const parentGrid = element.parentElement;
+            const buttons = parentGrid.getElementsByClassName('option-btn');
+            for (let btn of buttons) {
+                btn.classList.remove('selected');
+            }
+            element.classList.add('selected');
+        }
+
+        // --- نظام القلم والسبورة الذكية لكل كارت ---
+        let isDrawModeActive = false;
+        let isEraser = false;
+        let currentColor = '#ef4444';
+
+        function initCanvases() {
+            const canvases = document.querySelectorAll('.card-canvas');
+            canvases.forEach((canvas) => {
+                const card = canvas.parentElement;
+                canvas.width = card.offsetWidth;
+                canvas.height = card.offsetHeight;
+
+                const ctx = canvas.getContext('2d');
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                let isDrawing = false;
+
+                function getPos(e) {
+                    const rect = canvas.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    return {
+                        x: clientX - rect.left,
+                        y: clientY - rect.top
+                    };
+                }
+
+                function startDraw(e) {
+                    if (!isDrawModeActive) return;
+                    if (e.touches && e.touches.length > 1) return; // السماح بالتمرير بإصبعين
+
+                    isDrawing = true;
+                    const pos = getPos(e);
+                    ctx.beginPath();
+                    ctx.moveTo(pos.x, pos.y);
+                    drawMove(e);
+                }
+
+                function drawMove(e) {
+                    if (!isDrawing || !isDrawModeActive) return;
+                    if (e.touches && e.touches.length > 1) {
+                        isDrawing = false;
+                        ctx.beginPath();
+                        return;
+                    }
+
+                    const pos = getPos(e);
+                    if (isEraser) {
+                        ctx.globalCompositeOperation = 'destination-out';
+                        ctx.lineWidth = 28; // حجم الأستيكة
+                    } else {
+                        ctx.globalCompositeOperation = 'source-over';
+                        ctx.lineWidth = 3.5; // حجم القلم
+                        ctx.strokeStyle = currentColor;
+                    }
+
+                    ctx.lineTo(pos.x, pos.y);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(pos.x, pos.y);
+                }
+
+                function endDraw() {
+                    if (!isDrawing) return;
+                    isDrawing = false;
+                    ctx.beginPath();
+                }
+
+                // أحداث الماوس
+                canvas.addEventListener('mousedown', startDraw);
+                canvas.addEventListener('mousemove', drawMove);
+                window.addEventListener('mouseup', endDraw);
+
+                // أحداث اللمس (الموبايل والتابلت)
+                canvas.addEventListener('touchstart', (e) => {
+                    if (isDrawModeActive && e.touches.length === 1) {
+                        e.preventDefault(); // منع تحرك الشاشة بإصبع واحد أثناء الكتابة
+                        startDraw(e);
+                    }
+                }, { passive: false });
+
+                canvas.addEventListener('touchmove', (e) => {
+                    if (isDrawModeActive && e.touches.length === 1) {
+                        e.preventDefault();
+                        drawMove(e);
+                    }
+                }, { passive: false });
+
+                canvas.addEventListener('touchend', endDraw);
+            });
+        }
+
+        // الحفاظ على الرسومات لو حجم الشاشة اتغير
+        window.addEventListener('resize', () => {
+            document.querySelectorAll('.card-canvas').forEach((canvas) => {
+                const card = canvas.parentElement;
+                if (canvas.width !== card.offsetWidth || canvas.height !== card.offsetHeight) {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvas.width;
+                    tempCanvas.height = canvas.height;
+                    tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+                    canvas.width = card.offsetWidth;
+                    canvas.height = card.offsetHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.drawImage(tempCanvas, 0, 0);
+                }
+            });
+        });
+
+        window.addEventListener('load', initCanvases);
+        setTimeout(initCanvases, 300);
+
+        function toggleDrawing() {
+            isDrawModeActive = !isDrawModeActive;
+            const btn = document.getElementById('toggleDrawBtn');
+            if (isDrawModeActive) {
+                document.body.classList.add('draw-mode-active');
+                btn.classList.add('active');
+                btn.innerText = "إيقاف القلم (وضع التصفح والحل) 🛑";
+            } else {
+                document.body.classList.remove('draw-mode-active');
+                btn.classList.remove('active');
+                btn.innerText = "تفعيل قلم الشرح ✍️";
+            }
+        }
+
+        function setTool(tool, element, color) {
+            document.querySelectorAll('.tools-panel .tool-btn').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+            
+            if (tool === 'eraser') {
+                isEraser = true;
+            } else {
+                isEraser = false;
+                currentColor = color;
+            }
+
+            if (!isDrawModeActive) {
+                toggleDrawing();
+            }
+        }
+
+        function clearAllCanvases() {
+            document.querySelectorAll('.card-canvas').forEach((canvas) => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+        }
+    </script>
+</body>
+</html>
